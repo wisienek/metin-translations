@@ -1,0 +1,9 @@
+# folders
+node_modules
+dist
+.idea
+data
+pkg
+
+# files
+google_cloud_key.json

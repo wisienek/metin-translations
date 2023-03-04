@@ -1,0 +1,7 @@
+# folders
+.idea
+data
+pkg
+
+# files
+google_cloud_key.json
