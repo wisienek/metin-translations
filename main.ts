@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import {
   GameTranslationType,
@@ -41,10 +41,10 @@ import { WebsiteTranslator } from './src/website-translator';
 
     console.log(`Finished all translations, saving cache!`);
 
-    // writeFileSync(
-    //   resolve(__dirname, 'data', 'cache.json'),
-    //   JSON.stringify(cache, null, 2),
-    // );
+    writeFileSync(
+      resolve(__dirname, 'cache.json'),
+      JSON.stringify(cache, null, 2),
+    );
   } catch (error) {
     console.error(`Outside error`, error);
   }

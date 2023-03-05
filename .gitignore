@@ -8,3 +8,4 @@ pkg
 # files
 google_cloud_key.json
 *.log
+cache.json

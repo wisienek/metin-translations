@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdir, mkdirSync, readdirSync, writeFileSync } from 'fs';
 import { fromFile } from 'php-array-reader';
 import { resolve } from 'path';
 import { Languages, TranslateItem, WebsiteTranslationType } from './types';
@@ -52,19 +52,25 @@ export class WebsiteTranslator extends BaseTranslator {
         ? this.parseJsonFormatted(item.translated)
         : item.translated;
 
-      fileString.push(
-        `'${key}' => ${
-          Array.isArray(value)
-            ? `[${value.map((v) => (isNaN(+v) ? `'${v}'` : v))}]`
-            : `'${value}'`
-        },`,
-      );
+      if (key)
+
+        fileString.push(
+          `'${key}' => ${
+            Array.isArray(value)
+              ? `[${value.map((v) => (isNaN(+v) ? `'${v}'` : v))}]`
+              : `'${value}'`
+          },`,
+        );
     });
 
     isPhp && fileString.push('];');
 
     const outputFileName = fileName.replace(`.${from}`, `.${to}`);
-    const outputFileLocation = resolve(this.getLangFolder(to), outputFileName);
+
+    const outputLangFolder = this.getLangFolder(to);
+    if (!existsSync(outputLangFolder)) mkdirSync(outputLangFolder);
+
+    const outputFileLocation = resolve(outputLangFolder, outputFileName);
     writeFileSync(outputFileLocation, fileString.join('\n'));
   }
 
