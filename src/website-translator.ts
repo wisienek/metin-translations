@@ -22,7 +22,7 @@ export class WebsiteTranslator extends BaseTranslator {
     const files = readdirSync(this.getLangFolder(from));
 
     for (const originalFile of files) {
-      if (!originalFile.includes('email')) continue;
+      if (originalFile !== 'account.pl.php') continue;
       console.log(`Will translate ${originalFile} file`);
 
       const toTranslate = this.readPhpFile(from, originalFile);
@@ -46,21 +46,28 @@ export class WebsiteTranslator extends BaseTranslator {
     isPhp && fileString.push('<?php', 'return [');
 
     items.forEach((item) => {
-      const isParsed = this.isJSONFormatted(item.translated);
+      const fixed = item.translated.replace(`""`, `"`);
+      const isParsed = this.isJSONFormatted(fixed);
       const key = item.rest;
       const value: string | StringOrNumber[] = isParsed
-        ? this.parseJsonFormatted(item.translated)
-        : item.translated;
+        ? this.parseJsonFormatted(fixed)
+        : fixed;
 
-      if (key)
+      if (!this.isCached(item.sanitized, from, to))
+        this.addToCache(item.sanitized, fixed, from, to);
 
-        fileString.push(
-          `'${key}' => ${
-            Array.isArray(value)
-              ? `[${value.map((v) => (isNaN(+v) ? `'${v}'` : v))}]`
-              : `'${value}'`
-          },`,
-        );
+      const toPush = `\t'${key}' => ${
+        Array.isArray(value)
+          ? `[${value.map((v) =>
+              isNaN(+v) ? `'${(v as string).replace(`\'`, `\\'`)}'` : v,
+            )}]`
+          : `'${value.replace(`\'`, `\\'`)}'`
+      },`;
+
+      // if (key === 'account_registration_success_activation_needed')
+      //   console.dir({ item, value, toPush, isParsed });
+
+      fileString.push(toPush);
     });
 
     isPhp && fileString.push('];');
@@ -85,7 +92,6 @@ export class WebsiteTranslator extends BaseTranslator {
   private isJSONFormatted(line: string): boolean {
     try {
       JSON.parse(line);
-
       return true;
     } catch (er) {
       return false;

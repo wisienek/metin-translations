@@ -93,7 +93,8 @@ export abstract class BaseTranslator {
   }
 
   protected isCached(item: string, from: Languages, to: Languages): boolean {
-    if (this.cache?.[from]?.[to]?.[item]) return true;
+    const straight = this.cache?.[from]?.[to]?.[item];
+    if (straight) return true;
 
     if (this.cache[to] && this.cache[to][from]) {
       const translations = Object.values(this.cache[to][from] ?? {}).map((i) =>
