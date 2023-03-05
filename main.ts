@@ -1,6 +1,11 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { GameTranslationType, Languages } from './src/types';
+import {
+  GameTranslationType,
+  Languages,
+  WebsiteTranslationType,
+} from './src/types';
+import { WebsiteTranslator } from './src/website-translator';
 
 (async () => {
   try {
@@ -25,11 +30,14 @@ import { GameTranslationType, Languages } from './src/types';
       // Languages.TURKISH,
     ];
 
-    // await Promise.all(
-    //   langsToTranslate.map((lang) =>
-    //     new ItemTranslator(translatingFile).translate(fromLanguage, lang),
-    //   ),
-    // );
+    await Promise.all(
+      langsToTranslate.map((lang) =>
+        new WebsiteTranslator(cache, WebsiteTranslationType.INCLUDES).translate(
+          fromLanguage,
+          lang,
+        ),
+      ),
+    );
 
     console.log(`Finished all translations, saving cache!`);
 

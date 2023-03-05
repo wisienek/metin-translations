@@ -23,7 +23,7 @@ export abstract class BaseTranslator {
     else console.warn(`No shortcut file present!`);
   }
 
-  protected abstract translate(from: Languages, to: Languages): Promise<void>;
+  abstract translate(from: Languages, to: Languages): Promise<void>;
 
   protected async translateItems(
     items: Array<TranslateItem>,
@@ -117,7 +117,7 @@ export abstract class BaseTranslator {
       if (translations.includes(item.toLowerCase())) {
         const entries = Object.entries(this.cache[to][from]);
         const found = entries.find(
-          ([key, value]) => value.toLowerCase() === item.toLowerCase(),
+          ([_, value]) => value.toLowerCase() === item.toLowerCase(),
         );
 
         return found[0];
