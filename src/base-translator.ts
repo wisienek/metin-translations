@@ -1,6 +1,7 @@
 import { TranslationServiceClient } from '@google-cloud/translate';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
+import 'dotenv';
 import { TranslateItem, Languages } from './types';
 
 export abstract class BaseTranslator {

@@ -1,4 +1,12 @@
-import { existsSync, mkdir, mkdirSync, readdirSync, writeFileSync } from 'fs';
+import {
+  existsSync,
+  mkdir,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
 import { fromFile } from 'php-array-reader';
 import { resolve } from 'path';
 import { Languages, TranslateItem, WebsiteTranslationType } from './types';
@@ -22,15 +30,35 @@ export class WebsiteTranslator extends BaseTranslator {
     const files = readdirSync(this.getLangFolder(from));
 
     for (const originalFile of files) {
-      if (originalFile !== 'account.pl.php') continue;
       console.log(`Will translate ${originalFile} file`);
 
-      const toTranslate = this.readPhpFile(from, originalFile);
+      const isPhpFile = this.isPhpFile(
+        resolve(this.getLangFolder(from), originalFile),
+      );
+
+      console.log(`PHP?: ${isPhpFile}`);
+
+      const toTranslate = isPhpFile
+        ? this.readPhpFile(from, originalFile)
+        : this.readJSFile(from, originalFile);
+
+      console.log(
+        `Read file to translate with ${
+          Object.keys(toTranslate).length
+        } records`,
+      );
+
       const preparedItems = this.prepareItemsToTranslate(toTranslate);
+
+      console.log(`Prepared items to translate`);
 
       const translated = await this.translateItems(preparedItems, from, to);
 
+      console.log(`Translated items`);
+
       this.saveTranslatedItems(translated, from, to, originalFile);
+
+      console.log(`Saved Translated items`);
     }
   }
 
@@ -41,8 +69,10 @@ export class WebsiteTranslator extends BaseTranslator {
     fileName: string,
   ) {
     const isPhp = this.isPhpFile(resolve(this.getLangFolder(from), fileName));
+    const isJs = this.isJsFile(resolve(this.getLangFolder(from), fileName));
     const fileString: string[] = [];
 
+    isJs && fileString.push(`LANG = {`);
     isPhp && fileString.push('<?php', 'return [');
 
     items.forEach((item) => {
@@ -56,14 +86,7 @@ export class WebsiteTranslator extends BaseTranslator {
       if (!this.isCached(item.sanitized, from, to))
         this.addToCache(item.sanitized, fixed, from, to);
 
-      const toPush = `\t'${key}' => ${
-        Array.isArray(value)
-          ? `[${value.map((v) =>
-              isNaN(+v) ? `'${(v as string).replace(`\'`, `\\'`)}'` : v,
-            )}]`
-          : `'${value.replace(`\'`, `\\'`)}'`
-      },`;
-
+      const toPush = this.getStringToPush(key, value, isPhp);
       // if (key === 'account_registration_success_activation_needed')
       //   console.dir({ item, value, toPush, isParsed });
 
@@ -71,14 +94,43 @@ export class WebsiteTranslator extends BaseTranslator {
     });
 
     isPhp && fileString.push('];');
+    isJs && fileString.push(`}`);
 
-    const outputFileName = fileName.replace(`.${from}`, `.${to}`);
+    const outputFileName = isJs
+      ? `${to}.js`
+      : fileName.replace(`.${from}`, `.${to}`);
 
     const outputLangFolder = this.getLangFolder(to);
     if (!existsSync(outputLangFolder)) mkdirSync(outputLangFolder);
 
     const outputFileLocation = resolve(outputLangFolder, outputFileName);
-    writeFileSync(outputFileLocation, fileString.join('\n'));
+
+    const replacer = `'`;
+    const finalString = fileString
+      .join('\n')
+      .replace(`„`, replacer)
+      .replace(`”`, replacer)
+      .replace(`'[`, `[`)
+      .replace(`]'`, `]`)
+      .replace(`"`, replacer);
+
+    writeFileSync(outputFileLocation, finalString);
+  }
+
+  private getStringToPush(
+    key: string,
+    value: string | StringOrNumber[],
+    isPhp: boolean,
+  ): string {
+    const mappedValue = Array.isArray(value)
+      ? `[${value.map((v) =>
+          isNaN(+v) ? `'${(v as string).replace(`\'`, `\\'`)}'` : v,
+        )}]`
+      : `'${value.replace(`\'`, `\\'`)}'`;
+
+    return isPhp
+      ? `\t'${key}' => ${mappedValue},`
+      : `\t${key}: ${mappedValue},`;
   }
 
   private parseJsonFormatted(line: string): StringOrNumber[] {
@@ -124,8 +176,31 @@ export class WebsiteTranslator extends BaseTranslator {
     return fromFile(location);
   }
 
+  private readJSFile(from: Languages, name: string): Record<string, unknown> {
+    const location = resolve(this.getLangFolder(from), name);
+    if (!this.isJsFile(location)) throw new Error(`Not a js file ${location}`);
+
+    const prefix = 'LANG = ';
+    const readBuffer = readFileSync(location, { encoding: 'utf-8' });
+
+    const sanitizedFileBuffer = readBuffer.replace(prefix, 'module.exports = ');
+    const tempLocation = location.replace('.js', '_temp.js');
+    writeFileSync(tempLocation, sanitizedFileBuffer);
+
+    const LANG = require(tempLocation);
+    rmSync(tempLocation);
+
+    return LANG;
+  }
+
+  private isJsFile(location: string): boolean {
+    return existsSync(location) && location.endsWith('.js');
+  }
+
   private isPhpFile(location: string): boolean {
-    return existsSync(location) && location.endsWith('.php');
+    const exists = existsSync(location);
+    const mimeTypeCorrect = location.endsWith('.php');
+    return exists && mimeTypeCorrect;
   }
 
   private getLangFolder(from: Languages): string {

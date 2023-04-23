@@ -4,6 +4,7 @@ dist
 .idea
 data
 pkg
+.env
 
 # files
 google_cloud_key.json
