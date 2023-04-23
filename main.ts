@@ -17,17 +17,17 @@ import { WebsiteTranslator } from './src/website-translator';
 
     const translatingFile = GameTranslationType.LOCALE_GAME;
     const fromLanguage = Languages.POLISH;
-    const translatingType = WebsiteTranslationType.INCLUDES;
+    const translatingType = WebsiteTranslationType.LAYOUT;
 
     const langsToTranslate = [
       // Languages.ENGLISH,
-      Languages.CZECH,
-      Languages.GERMAN,
-      Languages.ITALIAN,
-      Languages.HUNGARIAN,
-      Languages.PORTUGUESE,
+      // Languages.CZECH,
+      // Languages.GERMAN,
+      // Languages.ITALIAN,
+      // Languages.HUNGARIAN,
+      // Languages.PORTUGUESE,
       // Languages.ROMANIAN,
-      Languages.SPANISH,
+      // Languages.SPANISH,
       Languages.TURKISH,
     ];
 

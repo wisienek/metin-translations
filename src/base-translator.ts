@@ -1,8 +1,10 @@
 import { TranslationServiceClient } from '@google-cloud/translate';
 import { existsSync, readFileSync } from 'fs';
+import * as dotenv from 'dotenv';
 import { resolve } from 'path';
-import 'dotenv';
 import { TranslateItem, Languages } from './types';
+
+dotenv.config();
 
 export abstract class BaseTranslator {
   protected readonly shortcutsDefinition: Record<string, string> = {};
@@ -56,7 +58,7 @@ export abstract class BaseTranslator {
       }
 
       const request = {
-        parent: `projects/dauntless-drive-374111/locations/global`,
+        parent: `projects/${process.env.PROJECT_NAME}/locations/global`,
         contents: [item.sanitized],
         mimeType: 'text/plain',
         sourceLanguageCode: from,
