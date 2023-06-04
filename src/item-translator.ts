@@ -1,16 +1,16 @@
-import { readFileSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
-import { TranslateItem, GameTranslationType, Languages } from './types';
-import { BaseTranslator } from './base-translator';
+import {readFileSync, writeFileSync} from 'fs';
+import {resolve} from 'path';
+import {GameTranslationType, Languages, TranslateItem} from './types';
+import {BaseTranslator} from './base-translator';
 
 export class ItemTranslator extends BaseTranslator {
   constructor(
     protected readonly cache: Partial<
       Record<Languages, Partial<Record<Languages, Record<string, string>>>>
     >,
-    private readonly type: GameTranslationType,
+    protected readonly type: GameTranslationType,
   ) {
-    super(cache);
+    super(cache, type);
 
     this.outPutName = `${this.type}.zip`;
   }
@@ -244,6 +244,6 @@ export class ItemTranslator extends BaseTranslator {
   }
 
   getDataFolder(): string {
-    return resolve(__dirname, 'data', this.type);
+    return resolve(__dirname, '..', 'data', this.type);
   }
 }

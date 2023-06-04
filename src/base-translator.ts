@@ -2,7 +2,7 @@ import { TranslationServiceClient } from '@google-cloud/translate';
 import { existsSync, readFileSync } from 'fs';
 import * as dotenv from 'dotenv';
 import { resolve } from 'path';
-import { TranslateItem, Languages } from './types';
+import {TranslateItem, Languages, GameTranslationType, WebsiteTranslationType} from './types';
 
 dotenv.config();
 
@@ -18,6 +18,7 @@ export abstract class BaseTranslator {
     protected readonly cache: Partial<
       Record<Languages, Partial<Record<Languages, Record<string, string>>>>
     >,
+    protected readonly type: GameTranslationType | WebsiteTranslationType
   ) {
     if (existsSync(this.resolveShortcutsFileName()))
       this.shortcutsDefinition = JSON.parse(

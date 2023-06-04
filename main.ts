@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'fs';
+import {existsSync, readFileSync, writeFileSync} from 'fs';
 import { resolve } from 'path';
 import {
   GameTranslationType,
@@ -6,13 +6,18 @@ import {
   WebsiteTranslationType,
 } from './src/types';
 import { WebsiteTranslator } from './src/website-translator';
+import {ItemTranslator} from "./src/item-translator";
 
 (async () => {
   try {
+    const CACHE_FILE_PATH = resolve(__dirname, 'data', 'cache.json');
+    if(!existsSync(CACHE_FILE_PATH))
+      writeFileSync(CACHE_FILE_PATH, JSON.stringify({}));
+
     const cache: Partial<
       Record<Languages, Partial<Record<Languages, Record<string, string>>>>
     > = JSON.parse(
-      readFileSync(resolve(__dirname, 'data', 'cache.json'), 'utf-8'),
+      readFileSync(CACHE_FILE_PATH, 'utf-8'),
     );
 
     const translatingFile = GameTranslationType.LOCALE_GAME;
@@ -33,17 +38,21 @@ import { WebsiteTranslator } from './src/website-translator';
 
     await Promise.all(
       langsToTranslate.map((lang) =>
-        new WebsiteTranslator(cache, translatingType).translate(
-          fromLanguage,
-          lang,
-        ),
+          new ItemTranslator(cache, translatingFile).translate(
+              fromLanguage,
+              lang,
+          )
+        // new WebsiteTranslator(cache, translatingType).translate(
+        //   fromLanguage,
+        //   lang,
+        // ),
       ),
     );
 
     console.log(`Finished all translations, saving cache!`);
 
     writeFileSync(
-      resolve(__dirname, 'cache.json'),
+        CACHE_FILE_PATH,
       JSON.stringify(cache, null, 2),
     );
   } catch (error) {
