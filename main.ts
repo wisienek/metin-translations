@@ -20,7 +20,7 @@ import {ItemTranslator} from "./src/item-translator";
       readFileSync(CACHE_FILE_PATH, 'utf-8'),
     );
 
-    const translatingFile = GameTranslationType.LOCALE_GAME;
+    const translatingFile = GameTranslationType.LOCALE_INTERFACE;
     const fromLanguage = Languages.POLISH;
     const translatingType = WebsiteTranslationType.LAYOUT;
 
