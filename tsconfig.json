@@ -1,9 +1,13 @@
 {
   "compilerOptions": {
+    "experimentalDecorators": true,
     "module": "commonjs",
+    "downlevelIteration": true,
     "target": "es5",
     "sourceMap": true,
     "allowSyntheticDefaultImports": true
   },
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

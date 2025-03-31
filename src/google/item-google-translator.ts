@@ -1,9 +1,9 @@
-import {readFileSync, writeFileSync} from 'fs';
-import {resolve} from 'path';
-import {GameTranslationType, Languages, TranslateItem} from './types';
-import {BaseTranslator} from './base-translator';
+import { readFileSync, writeFileSync } from 'fs';
+import { resolve } from 'path';
+import { GameTranslationType, Languages, TranslateItem } from './types';
+import { BaseGoogleTranslator } from './base-google-translator';
 
-export class ItemTranslator extends BaseTranslator {
+export class ItemGoogleTranslator extends BaseGoogleTranslator {
   constructor(
     protected readonly cache: Partial<
       Record<Languages, Partial<Record<Languages, Record<string, string>>>>
@@ -15,9 +15,9 @@ export class ItemTranslator extends BaseTranslator {
     this.outPutName = `${this.type}.zip`;
   }
 
-  async translate(from, to) {
+  async translate(from: Languages, to: Languages) {
     const fromFile = this.resolveFileName(from);
-    const itemFile = readFileSync(fromFile, { encoding: 'utf-8' });
+    const itemFile = readFileSync(fromFile).toString('utf-8');
 
     console.log(
       `Reading file ${fromFile}, read: ${!!itemFile}, chars: ${
@@ -55,13 +55,14 @@ export class ItemTranslator extends BaseTranslator {
       if (!this.isCached(item.sanitized, from, to))
         this.addToCache(item.sanitized, item.translated, from, to);
 
-      if (
-        this.type === GameTranslationType.LOCALE_INTERFACE ||
-        this.type === GameTranslationType.LOCALE_GAME
-      ) {
-        item.translated = `${item.original}\t${item.translated}${
-          item?.rest ? `\t${item.rest}` : ''
-        }`;
+      if (this.isTabbed()) {
+        if (this.type === GameTranslationType.ITEM_DESC) {
+          item.translated = `${item.rest}\t${item.original}\t${item.translated}`;
+        } else {
+          item.translated = `${item.original}\t${item.translated}${
+            item?.rest ? `\t${item.rest}` : ''
+          }`;
+        }
 
         newItems.push(item);
         continue;
@@ -109,7 +110,7 @@ export class ItemTranslator extends BaseTranslator {
     console.log(
       `Saving ${items.length} items to: ${saveLocation}, chars: ${textToSave.length}`,
     );
-    writeFileSync(saveLocation, textToSave);
+    writeFileSync(saveLocation, textToSave, { encoding: 'utf-8' });
 
     // await this.addToZip(saveLocation);
   }
@@ -146,18 +147,19 @@ export class ItemTranslator extends BaseTranslator {
         }
       }
 
-      if (
-        this.type === GameTranslationType.LOCALE_GAME ||
-        this.type === GameTranslationType.LOCALE_INTERFACE
-      ) {
-        const [tabName, middle, ...rest] = line.split('\t');
-
+      if (this.isTabbed()) {
+        let tabName: string, middle: string, rest: string | string[];
+        if (this.type === GameTranslationType.ITEM_DESC) {
+          [rest, tabName, middle] = line.split('\t', 3);
+        } else {
+          [tabName, middle, ...rest] = line.split('\t');
+        }
         if (middle?.length === 0 || middle?.trim().length === 0) {
           console.error(line);
 
           toTranslate.push({
             ...this.getPreparedItem(tabName, '[empty]'),
-            rest: rest?.join('\t'),
+            rest: Array.isArray(rest) ? rest?.join('\t') : rest,
           });
           continue;
           // throw new Error(`Not enough characters to translate! (line ${i})`);
@@ -165,7 +167,7 @@ export class ItemTranslator extends BaseTranslator {
 
         toTranslate.push({
           ...this.getPreparedItem(tabName, middle),
-          rest: rest?.join('\t'),
+          rest: Array.isArray(rest) ? rest?.join('\t') : rest,
         });
         continue;
       }
@@ -204,7 +206,12 @@ export class ItemTranslator extends BaseTranslator {
   }
 
   private isItemException(item: string): boolean {
-    return item.indexOf('wędka') > -1 || item.indexOf('wodny kamień') > -1;
+    return (
+      item.indexOf('wedka') > -1 ||
+      item.indexOf('wodny kamień') > -1 ||
+      item.indexOf('kamien duszy') > -1 ||
+      item.indexOf('kamień duszy') > -1
+    );
   }
 
   shouldTranslate(
@@ -236,14 +243,27 @@ export class ItemTranslator extends BaseTranslator {
     return resolve(this.getDataFolder(), `${prefix}_${language}.txt`);
   }
 
+  isTabbed(): boolean {
+    return [
+      GameTranslationType.LOCALE_GAME,
+      GameTranslationType.LOCALE_INTERFACE,
+      GameTranslationType.LOCALE_CLIENT,
+      GameTranslationType.EXTENDED_PET_SKILL,
+      GameTranslationType.LOCALE_STRING,
+      GameTranslationType.ITEM_DESC,
+    ].includes(this.type);
+  }
+
   isLocale() {
     return (
       this.type.indexOf('locale') > -1 ||
-      this.type === GameTranslationType.ITEM_DESCRIPTION
+      this.type === GameTranslationType.ITEM_DESCRIPTION ||
+      this.type === GameTranslationType.EXTENDED_PET_SKILL ||
+      this.type === GameTranslationType.ITEM_DESC
     );
   }
 
   getDataFolder(): string {
-    return resolve(__dirname, '..', 'data', this.type);
+    return resolve(__dirname, '..', '..', 'data', this.type);
   }
 }

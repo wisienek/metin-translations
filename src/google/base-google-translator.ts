@@ -2,14 +2,20 @@ import { TranslationServiceClient } from '@google-cloud/translate';
 import { existsSync, readFileSync } from 'fs';
 import * as dotenv from 'dotenv';
 import { resolve } from 'path';
-import {TranslateItem, Languages, GameTranslationType, WebsiteTranslationType} from './types';
+import {
+  TranslateItem,
+  Languages,
+  GameTranslationType,
+  WebsiteTranslationType,
+} from './types';
 
 dotenv.config();
 
-export abstract class BaseTranslator {
+export abstract class BaseGoogleTranslator {
   protected readonly shortcutsDefinition: Record<string, string> = {};
   protected readonly transactionClient = new TranslationServiceClient({
-    keyFilename: resolve(__dirname, '..', 'google_cloud_key.json'),
+    keyFilename: resolve(__dirname, '..', '..', 'google_cloud_key.json'),
+    // key: 'AIzaSyDR6U4T0-yn2KqyPjgiMblo7RR0uCI1crc',
   });
 
   protected outPutName: string;
@@ -18,7 +24,7 @@ export abstract class BaseTranslator {
     protected readonly cache: Partial<
       Record<Languages, Partial<Record<Languages, Record<string, string>>>>
     >,
-    protected readonly type: GameTranslationType | WebsiteTranslationType
+    protected readonly type: GameTranslationType | WebsiteTranslationType,
   ) {
     if (existsSync(this.resolveShortcutsFileName()))
       this.shortcutsDefinition = JSON.parse(
@@ -38,6 +44,7 @@ export abstract class BaseTranslator {
 
     for (const item of items) {
       if (this.isCached(item.sanitized, from, to)) {
+        console.log(`Cached request (${item.sanitized}) ${from} -> ${to}`);
         translatedItems.push(
           new Promise<TranslateItem>((resolve) =>
             resolve({
@@ -49,7 +56,11 @@ export abstract class BaseTranslator {
         continue;
       }
 
-      if (!this.shouldTranslate(item, from, to)) {
+      if (
+        !this.shouldTranslate(item, from, to) ||
+        item.sanitized.length === 0
+      ) {
+        console.log(`Shouldn't translate ${item.sanitized} ${from} -> ${to}`);
         translatedItems.push(
           new Promise<TranslateItem>((resolve) =>
             resolve({ ...item, translated: item.sanitized } as TranslateItem),
@@ -57,6 +68,10 @@ export abstract class BaseTranslator {
         );
         continue;
       }
+
+      console.log(
+        `Will translate ${item.sanitized} ${from} -> ${to} for ${process.env.PROJECT_NAME}`,
+      );
 
       const request = {
         parent: `projects/${process.env.PROJECT_NAME}/locations/global`,
@@ -105,7 +120,7 @@ export abstract class BaseTranslator {
         i.toLowerCase(),
       );
 
-      return !!translations.includes(item.toLowerCase());
+      return translations.includes(item.toLowerCase());
     }
 
     return false;

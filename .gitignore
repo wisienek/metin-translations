@@ -10,3 +10,19 @@ pkg
 google_cloud_key.json
 *.log
 cache.json
+
+# Terraform
+/terraform/**/.terraform/*
+/terraform/**/*.tfstate
+/terraform/**/*.tfstate.*
+/terraform/**/crash.log
+/terraform/**/crash.*.log
+/terraform/**/*.tfvars
+/terraform/**/override.tf
+/terraform/**/override.tf.json
+/terraform/**/*_override.tf
+/terraform/**/*_override.tf.json
+/terraform/**/.terraformrc
+/terraform/**/.terraform.lock.hcl
+/terraform/**/terraform.rc
+/terraform/**/*.pem

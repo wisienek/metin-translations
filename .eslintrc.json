@@ -1,0 +1,20 @@
+{
+  "root": true,
+  "ignorePatterns": ["**/*"],
+  "plugins": [],
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx"],
+      "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:prettier/recommended"
+      ],
+      "parser": "@typescript-eslint/parser",
+      "plugins": ["@typescript-eslint/eslint-plugin"],
+      "rules": {
+        "curly": "error"
+      }
+    }
+  ]
+}

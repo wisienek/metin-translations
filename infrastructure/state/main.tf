@@ -9,7 +9,7 @@ terraform {
 
 provider "aws" {
   region  = "eu-central-1"
-  profile = "kosa-corporation"
+  profile = "m-uig"
 
   default_tags {
     tags = {

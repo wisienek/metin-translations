@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set the desired target charset format
-target_charset="iso-8859-1"
+target_charset="ISO-8859-2"
 
 # Get the directory path from user input
 echo "Enter the directory path containing the text files to be converted:"

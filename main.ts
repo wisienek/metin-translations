@@ -1,61 +1,42 @@
-import {existsSync, readFileSync, writeFileSync} from 'fs';
-import { resolve } from 'path';
 import {
-  GameTranslationType,
-  Languages,
-  WebsiteTranslationType,
-} from './src/types';
-import { WebsiteTranslator } from './src/website-translator';
-import {ItemTranslator} from "./src/item-translator";
+  AwsConfig,
+  getStaticConfig,
+  S3LambdaClient,
+  SqsConfig,
+  SQSManager,
+  SQSQueue,
+} from './src';
 
-(async () => {
-  try {
-    const CACHE_FILE_PATH = resolve(__dirname, 'data', 'cache.json');
-    if(!existsSync(CACHE_FILE_PATH))
-      writeFileSync(CACHE_FILE_PATH, JSON.stringify({}));
+const awsConfig = getStaticConfig(AwsConfig);
+const sqsConfig = getStaticConfig(SqsConfig);
+const s3Client = new S3LambdaClient(awsConfig);
+const sqsManager = new SQSManager(awsConfig, sqsConfig);
 
-    const cache: Partial<
-      Record<Languages, Partial<Record<Languages, Record<string, string>>>>
-    > = JSON.parse(
-      readFileSync(CACHE_FILE_PATH, 'utf-8'),
-    );
+export const handler = async (payload) =>
+  internalHandler(exposeSQSMessage(payload));
 
-    const translatingFile = GameTranslationType.LOCALE_INTERFACE;
-    const fromLanguage = Languages.POLISH;
-    const translatingType = WebsiteTranslationType.LAYOUT;
+const internalHandler = async (payload: object) => {
+  if (isAcceptablePayload(payload)) {
+    try {
+      const payloadHandler = await initializePayloadHandler();
 
-    const langsToTranslate = [
-      // Languages.ENGLISH,
-      // Languages.CZECH,
-      // Languages.GERMAN,
-      // Languages.ITALIAN,
-      // Languages.HUNGARIAN,
-      // Languages.PORTUGUESE,
-      // Languages.ROMANIAN,
-      // Languages.SPANISH,
-      Languages.TURKISH,
-    ];
+      await payloadHandler.handleOrchestratorPayload(
+        await normalizer.normalize(payload),
+      );
+    } catch (error) {
+      console.log(`Unhandled error occurred! See DLQ!`);
+      console.error(error);
 
-    await Promise.all(
-      langsToTranslate.map((lang) =>
-          new ItemTranslator(cache, translatingFile).translate(
-              fromLanguage,
-              lang,
-          )
-        // new WebsiteTranslator(cache, translatingType).translate(
-        //   fromLanguage,
-        //   lang,
-        // ),
-      ),
-    );
-
-    console.log(`Finished all translations, saving cache!`);
-
-    writeFileSync(
-        CACHE_FILE_PATH,
-      JSON.stringify(cache, null, 2),
-    );
-  } catch (error) {
-    console.error(`Outside error`, error);
+      await sqsManager.sendMessage(
+        {
+          payload,
+          error,
+        },
+        SQSQueue.DEAD_LETTER,
+      );
+    }
+  } else {
+    console.log(`Received unacceptable payload. Sending to DLQ`);
+    await sqsManager.sendMessage(payload, SQSQueue.DEAD_LETTER);
   }
-})();
+};

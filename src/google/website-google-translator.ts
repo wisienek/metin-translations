@@ -10,18 +10,18 @@ import {
 import { fromFile } from 'php-array-reader';
 import { resolve } from 'path';
 import { Languages, TranslateItem, WebsiteTranslationType } from './types';
-import { BaseTranslator } from './base-translator';
+import { BaseGoogleTranslator } from './base-google-translator';
 
 type StringOrNumber = String | Number;
 
-export class WebsiteTranslator extends BaseTranslator {
+export class WebsiteGoogleTranslator extends BaseGoogleTranslator {
   constructor(
     protected readonly cache: Partial<
       Record<Languages, Partial<Record<Languages, Record<string, string>>>>
     >,
     protected readonly type: WebsiteTranslationType,
   ) {
-    super(cache);
+    super(cache, type);
 
     this.outPutName = 'website';
   }
@@ -50,7 +50,7 @@ export class WebsiteTranslator extends BaseTranslator {
 
       const preparedItems = this.prepareItemsToTranslate(toTranslate);
 
-      console.log(`Prepared items to translate`);
+      console.log(`Prepared items to translate ${preparedItems.length}`);
 
       const translated = await this.translateItems(preparedItems, from, to);
 
@@ -114,7 +114,7 @@ export class WebsiteTranslator extends BaseTranslator {
       .replace(`]'`, `]`)
       .replace(`"`, replacer);
 
-    writeFileSync(outputFileLocation, finalString);
+    writeFileSync(outputFileLocation, finalString, { encoding: 'utf-8' });
   }
 
   private getStringToPush(
@@ -185,7 +185,7 @@ export class WebsiteTranslator extends BaseTranslator {
 
     const sanitizedFileBuffer = readBuffer.replace(prefix, 'module.exports = ');
     const tempLocation = location.replace('.js', '_temp.js');
-    writeFileSync(tempLocation, sanitizedFileBuffer);
+    writeFileSync(tempLocation, sanitizedFileBuffer, { encoding: 'utf-8' });
 
     const LANG = require(tempLocation);
     rmSync(tempLocation);

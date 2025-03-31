@@ -1,4 +1,4 @@
-module "ecr" {
-  source = "../../modules/ecr"
-  env    = local.env
-}
+#module "ecr" {
+#  source = "../../modules/ecr"
+#  env    = local.env
+#}
